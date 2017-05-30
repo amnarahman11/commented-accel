@@ -160,11 +160,11 @@ static int cln_read(struct triton_md_handler_t *h)
 			return 0;
 		}
 
-		cln->recv_pos += n;			// accel-cmd show sessions give 19 here
-		cln->cmdline[cln->recv_pos] = '\0';	// cmdline would be having "show sessions exit"
+		cln->recv_pos += n;				// accel-cmd show sessions give 19 here
+		cln->cmdline[cln->recv_pos] = '\0';		// cmdline would be having "show sessions exit"
 
 		while (cln->recv_pos) {
-			d = strchr((char *)cln->cmdline, '\n');
+			d = strchr((char *)cln->cmdline, '\n');	// saving the portion of command after \n to d; exit in this scenario
 			if (!d) {
 				if (cln->recv_pos == RECV_BUF_SIZE - 1) {
 					log_warn("cli: tcp: recv buffer overflow\n");
@@ -182,6 +182,8 @@ static int cln_read(struct triton_md_handler_t *h)
 			} else {
 				if (conf_verbose == 2)
 					log_info2("cli: %s: %s\n", inet_ntoa(cln->addr.sin_addr), cln->cmdline);
+					// cli: 127.0.0.1: show sessions  -  - - - First iteration
+					// cli: 127.0.0.1: exit  -  - - - Second iteration
 
 				cli_process_cmd(&cln->cli_client);
 			}
@@ -189,8 +191,8 @@ static int cln_read(struct triton_md_handler_t *h)
 			if (cln->disconnect)
 				goto drop;
 
-			cln->recv_pos -= (uint8_t *)d + 1 - cln->cmdline;
-			memmove(cln->cmdline, d + 1, cln->recv_pos);
+			cln->recv_pos -= (uint8_t *)d + 1 - cln->cmdline;	// Updaing value of length indicator i.e. subtracting current cmd length
+			memmove(cln->cmdline, d + 1, cln->recv_pos);		// Updaing value of command-line
 		}
 	}
 
