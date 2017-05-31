@@ -267,7 +267,7 @@ static int cli_process_simple_cmd(struct cli_client_t *cln, int *err)
 		}
 		if (indx == sicmd->hdr_len) {
 			found = 1;
-			res = sicmd->exec(cmd, items, nb_items, cln);
+			res = sicmd->exec(cmd, items, nb_items, cln);	// 'Probably' calling the corresponding exec function see std_cmd.c#L381 for reference
 			if (res != CLI_CMD_OK)
 				break;
 		}
