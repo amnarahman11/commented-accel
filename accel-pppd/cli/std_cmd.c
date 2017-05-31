@@ -377,10 +377,10 @@ static void restart_help(char * const *fields, int fields_cnt, void *client)
 	cli_send(client, "\t\tdefault action - terminate all connections then restart\r\n");
 }
 
-
+/** Initializing all the commands. This function is further deciding which cmd_exec function should be executed for a particular command */
 static void init(void)
 {
-	cli_register_simple_cmd2(show_stat_exec, show_stat_help, 2, "show", "stat");
+	cli_register_simple_cmd2(show_stat_exec, show_stat_help, 2, "show", "stat");	// Attaching show_stat_exec with accel-cmd show stat
 	cli_register_simple_cmd2(terminate_exec, terminate_help, 1, "terminate");
 	cli_register_simple_cmd2(reload_exec, reload_help, 1, "reload");
 	cli_register_simple_cmd2(restart_exec, restart_help, 1, "restart");
