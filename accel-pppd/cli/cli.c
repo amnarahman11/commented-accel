@@ -244,6 +244,7 @@ static int cli_process_regexp_cmd(struct cli_client_t *cln, int *err)
 	return found;
 }
 
+/** Processing simple show commands like show sessions and show stat  */
 static int cli_process_simple_cmd(struct cli_client_t *cln, int *err)
 {
 	struct cli_simple_cmd_t *sicmd = NULL;
@@ -254,7 +255,9 @@ static int cli_process_simple_cmd(struct cli_client_t *cln, int *err)
 	int indx;
 	int res;
 
-	nb_items = split(cmd, items);
+	nb_items = split(cmd, items);		// Returning Number of items in the command e.g. '2' in case of show sessions
+						// Also splitting the command in such a way that action is saved in cmd | show sessions ==> show
+
 	list_for_each_entry(sicmd, &simple_cmd_list, entry) {
 		if (sicmd->hdr_len <= 0 || nb_items < sicmd->hdr_len)
 			continue;
