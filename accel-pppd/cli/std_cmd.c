@@ -335,7 +335,7 @@ static int reload_exec(const char *cmd, char * const *f, int f_cnt, void *cli)
 
 static void reload_help(char * const *fields, int fields_cnt, void *client)
 {
-	cli_send(client, "reload - reload config file\r\n");
+	cli_send(client, "reload - reload config file\r\n");		// Writing to the command using header file function
 }
 
 
@@ -380,6 +380,7 @@ static void restart_help(char * const *fields, int fields_cnt, void *client)
 /** Initializing all the commands. This function is further deciding which cmd_exec function should be executed for a particular command */
 static void init(void)
 {
+	// Usage of the following function (Processing Function of the command, Help function of cmd, Number of strings, <Command tokens>)
 	cli_register_simple_cmd2(show_stat_exec, show_stat_help, 2, "show", "stat");	// Attaching show_stat_exec with accel-cmd show stat
 	cli_register_simple_cmd2(terminate_exec, terminate_help, 1, "terminate");
 	cli_register_simple_cmd2(reload_exec, reload_help, 1, "reload");

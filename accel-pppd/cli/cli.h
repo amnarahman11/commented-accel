@@ -15,8 +15,8 @@ struct cli_simple_cmd_t
 	struct list_head entry;
 	int hdr_len;
 	const char **hdr;
-	int (*exec)(const char *cmd, char * const *fields, int fields_cnt, void *client);
-	void (*help)(char * const *fields, int field_cnt, void *client);
+	int (*exec)(const char *cmd, char * const *fields, int fields_cnt, void *client);	// Declaring function pointer for a generic execution
+	void (*help)(char * const *fields, int field_cnt, void *client);			// Declaring function pointer for a generic help command
 };
 
 struct cli_regexp_cmd_t
@@ -35,7 +35,9 @@ struct cli_regexp_cmd_t
 struct ap_session;
 
 void cli_register_simple_cmd(struct cli_simple_cmd_t *cmd);
-void cli_register_simple_cmd2(
+
+// This function would be called in the file where we have to register a new command and write a new execution function against that command
+void cli_register_simple_cmd2(									
 	int (*exec)(const char *cmd, char * const *fields, int fields_cnt, void *client),
 	void (*help)(char * const *fields, int fields_cnt, void *client),
 	int hdr_len,
@@ -44,6 +46,7 @@ void cli_register_simple_cmd2(
 void cli_register_regexp_cmd(struct cli_regexp_cmd_t *cmd);
 void cli_show_ses_register(const char *name, const char *desc, void (*print)(struct ap_session *ses, char *buf));
 
+// This is the function declaration which would be used to print content in CLI
 int cli_send(void *client, const char *data);
 int cli_sendv(void *client, const char *fmt, ...) __attribute__((format(gnu_printf, 2, 3)));
 
