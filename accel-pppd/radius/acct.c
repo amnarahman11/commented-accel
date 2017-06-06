@@ -19,24 +19,27 @@
 #include "memdebug.h"
 
 #define INTERIM_SAFE_TIME 10
+//Function execution Flow: rad_acct_interim_update-->req_set_stat-->req_set_RA-->rad_req_send-->rad_acct_sent-->rad_acct_recv
 
 static int req_set_RA(struct rad_req_t *req, const char *secret)
-{
-	MD5_CTX ctx;
+{ //handles MD5 mechanism
+log_emerg("In req_set_RA function");
+	MD5_CTX ctx; ,allocates an md5_ctx. 
 
-	if (rad_packet_build(req->pack, req->RA))
+	if (rad_packet_build(req->pack, req->RA))// defined in packet.c , allocate memory and attribute types for radius packet
 		return -1;
-
-	MD5_Init(&ctx);
-	MD5_Update(&ctx, req->pack->buf, req->pack->len);
+// The MD5 functions calculate a 128-bit one-way hash-function for any number of input bytes
+	MD5_Init(&ctx);//exists in md5.c ,initializes the hash state
+	MD5_Update(&ctx, req->pack->buf, req->pack->len);//sets data
 	MD5_Update(&ctx, secret, strlen(secret));
-	MD5_Final(req->pack->buf + 4, &ctx);
+	MD5_Final(req->pack->buf + 4, &ctx);//extract	the result using MD5Final()
 
 	return 0;
 }
 
 static int req_set_stat(struct rad_req_t *req, struct ap_session *ses)
-{
+{//set accounting stats like Input outpue octets, packets gigawords and Acct-Session-Time
+log_emerg("In req_set_stat function");
 	struct rtnl_link_stats stats;
 	struct radius_pd_t *rpd = req->rpd;
 	struct timespec ts;
@@ -64,6 +67,7 @@ static int req_set_stat(struct rad_req_t *req, struct ap_session *ses)
 
 static void rad_acct_sent(struct rad_req_t *req, int res)
 {
+log_emerg("In rad_acct_sent function");
 	if (res)
 		return;
 
@@ -82,6 +86,7 @@ static void rad_acct_sent(struct rad_req_t *req, int res)
 
 static void rad_acct_recv(struct rad_req_t *req)
 {
+log_emerg("In rad_acct_recv function");
 	int dt = (req->reply->tv.tv_sec - req->pack->tv.tv_sec) * 1000 +
 		(req->reply->tv.tv_nsec - req->pack->tv.tv_nsec) / 1000000;
 
@@ -98,6 +103,7 @@ static void rad_acct_recv(struct rad_req_t *req)
 
 static void rad_acct_timeout(struct triton_timer_t *t)
 {
+log_emerg("In rad_acct_timeout function");
 	struct rad_req_t *req = container_of(t, typeof(*req), timeout);
 	time_t dt;
 	struct timespec ts;
@@ -146,16 +152,18 @@ static void rad_acct_timeout(struct triton_timer_t *t)
 
 static void rad_acct_interim_update(struct triton_timer_t *t)
 {
+log_emerg("In rad_acct_interim_update function");
 	struct radius_pd_t *rpd = container_of(t, typeof(*rpd), acct_interim_timer);
 	struct timespec ts;
 
+//if next accounting request received or request timeout occurs return
 	if (rpd->acct_req->entry.next || rpd->acct_req->timeout.tpd)
 		return;
-
-	if (rpd->session_timeout.expire_tv.tv_sec &&
+//
+if (rpd->session_timeout.expire_tv.tv_sec &&
 			rpd->session_timeout.expire_tv.tv_sec - (_time() - rpd->ses->start_time) < INTERIM_SAFE_TIME)
 			return;
-
+//set rad accounting attributes
 	if (req_set_stat(rpd->acct_req, rpd->ses)) {
 		ap_session_terminate(rpd->ses, TERM_LOST_CARRIER, 0);
 		return;
@@ -163,17 +171,17 @@ static void rad_acct_interim_update(struct triton_timer_t *t)
 
 	if (!rpd->acct_interim_interval)
 		return;
-
+//set data for acct request
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	rpd->acct_req->ts = ts.tv_sec;
 	rpd->acct_req->pack->id++;
 
 	if (!rpd->acct_req->before_send)
-		req_set_RA(rpd->acct_req, rpd->acct_req->serv->secret);
+		req_set_RA(rpd->acct_req, rpd->acct_req->serv->secret);//function to handle MD5 mechanism
 
 	rpd->acct_req->timeout.expire_tv.tv_sec = conf_timeout;
 	rpd->acct_req->try = 0;
-
+//send accounting interim request and check for timeout
 	if (rad_req_send(rpd->acct_req) && conf_acct_timeout) {
 		log_ppp_warn("radius:acct: no servers available, terminating session...\n");
 		ap_session_terminate(rpd->ses, TERM_NAS_ERROR, 0);
@@ -182,6 +190,7 @@ static void rad_acct_interim_update(struct triton_timer_t *t)
 
 static int rad_acct_before_send(struct rad_req_t *req)
 {
+log_emerg("In rad_acct_before_send function");
 	struct timespec ts;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -194,6 +203,7 @@ static int rad_acct_before_send(struct rad_req_t *req)
 
 static void rad_acct_start_sent(struct rad_req_t *req, int res)
 {
+log_emerg("In rad_acct_start_sent function");
 	if (res) {
 		ap_session_terminate(req->rpd->ses, TERM_NAS_ERROR, 0);
 		return;
@@ -214,6 +224,7 @@ static void rad_acct_start_sent(struct rad_req_t *req, int res)
 
 static void rad_acct_start_recv(struct rad_req_t *req)
 {
+log_emerg("In rad_acct_start_recv function");
 	struct radius_pd_t *rpd = req->rpd;
 	int dt = (req->reply->tv.tv_sec - req->pack->tv.tv_sec) * 1000 +
 					(req->reply->tv.tv_nsec - req->pack->tv.tv_nsec) / 1000000;
@@ -250,6 +261,7 @@ static void rad_acct_start_recv(struct rad_req_t *req)
 
 static void rad_acct_start_timeout(struct triton_timer_t *t)
 {
+log_emerg("In rad_acct_start_timeout function");
 	struct rad_req_t *req = container_of(t, typeof(*req), timeout);
 
 	rad_server_timeout(req->serv);
@@ -267,6 +279,7 @@ static void rad_acct_start_timeout(struct triton_timer_t *t)
 
 int rad_acct_start(struct radius_pd_t *rpd)
 {
+log_emerg("In rad_acct_start function");
 	struct rad_req_t *req = rad_req_alloc(rpd, CODE_ACCOUNTING_REQUEST, rpd->ses->username);
 
 	if (!req)
@@ -302,6 +315,7 @@ out_err:
 
 static void rad_acct_stop_sent(struct rad_req_t *req, int res)
 {
+log_emerg("In rad_acct_stop_sent function");
 	if (res) {
 		if (ap_shutdown) {
 			struct radius_pd_t *rpd = req->rpd;
@@ -331,6 +345,7 @@ static void rad_acct_stop_sent(struct rad_req_t *req, int res)
 
 static void rad_acct_stop_recv(struct rad_req_t *req)
 {
+log_emerg("In rad_acct_stop_recv function");
 	struct radius_pd_t *rpd = req->rpd;
 	int dt = (req->reply->tv.tv_sec - req->pack->tv.tv_sec) * 1000 +
 					(req->reply->tv.tv_nsec - req->pack->tv.tv_nsec) / 1000000;
@@ -346,6 +361,7 @@ static void rad_acct_stop_recv(struct rad_req_t *req)
 
 static void rad_acct_stop_timeout(struct triton_timer_t *t)
 {
+log_emerg("In rad_acct_stop_timeout function");
 	struct rad_req_t *req = container_of(t, typeof(*req), timeout);
 
 	log_debug("timeout %p\n", req);
@@ -381,6 +397,7 @@ static void rad_acct_stop_timeout(struct triton_timer_t *t)
 
 static void start_deferred(struct rad_req_t *req)
 {
+log_emerg("In start_deferred function");
 	log_switch(triton_context_self(), NULL);
 	if (req->hnd.fd != -1) {
 		triton_md_register_handler(NULL, &req->hnd);
@@ -394,6 +411,7 @@ static void start_deferred(struct rad_req_t *req)
 
 void rad_acct_stop_defer(struct radius_pd_t *rpd)
 {
+log_emerg("In rad_acct_stop_defer function");
 	struct rad_req_t *req = rpd->acct_req;
 
 	rad_server_req_cancel(req, 1);
@@ -410,6 +428,7 @@ void rad_acct_stop_defer(struct radius_pd_t *rpd)
 
 int rad_acct_stop(struct radius_pd_t *rpd)
 {
+log_emerg("In rad_acct_stop function");
 	struct rad_req_t *req = rpd->acct_req;
 	struct timespec ts;
 
